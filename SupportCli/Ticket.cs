@@ -10,7 +10,12 @@ namespace SupportCli
         public State CurrentState { get; set; }
         public string AssignedToUser { get; set; }
         public int CommentsCount { get; set; }
-        public List<string> Comments { get; set; }
+        public List<string> Comments { get; }
+
+        public Ticket()
+        {
+            Comments = new List<string>();
+        }
 
         public enum State
         {
