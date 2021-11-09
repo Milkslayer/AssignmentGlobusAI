@@ -82,6 +82,13 @@ namespace SupportCli
                     {
                         var commentPrefix = _commands["comment"].Length + input.Split(' ')[1].Length + 1;
                         var comment = input.Substring(commentPrefix, input.Length - commentPrefix);
+
+                        if (string.IsNullOrWhiteSpace(comment))
+                        {
+                            Console.WriteLine("Comment cannot be empty");
+                            continue;
+                        }
+                        
                         var ticket = _tickets[id];
                         ticket.Comments.Add(comment);
                     
@@ -97,16 +104,15 @@ namespace SupportCli
                         var usernamePrefix = _commands["assign"].Length + input.Split(' ')[1].Length + 1;
                         var username = input.Substring(usernamePrefix, input.Length - usernamePrefix);
 
-                        if (!string.IsNullOrWhiteSpace(username))
-                        {
-                            Console.WriteLine(AssignTicket(id, username)
-                                ? $"Ticket {id} has been assigned to {username}"
-                                : "Ticket not found");
-                        }
-                        else
+                        if (string.IsNullOrWhiteSpace(username))
                         {
                             Console.WriteLine("Username cannot be empty");
+                            continue;
                         }
+                        
+                        Console.WriteLine(AssignTicket(id, username)
+                            ? $"Ticket {id} has been assigned to {username}"
+                            : "Ticket not found");
                     }
                     else
                         Console.WriteLine("Invalid ticket Id entered");
