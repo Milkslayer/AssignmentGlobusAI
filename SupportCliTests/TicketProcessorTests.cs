@@ -8,32 +8,66 @@ namespace SupportCliTests
     {
         #region TestData
 
-        private static object[] CreateTicket_InvalidData =
+        private static Dictionary<int, Ticket> _prepareTicketDict() => new Dictionary<int, Ticket>
+        {
+            {3, new Ticket(3, "Testing")},
+            {6, new Ticket(6, "Close")},
+            {9, new Ticket(9, "Ticket")}
+        };
+        
+        private static object[] _createTicketInvalidData =
         {
             new [] {""},
             new [] {string.Empty},
             new string[] {null}
         };
         
-        private static object[] CreateTicket_ValidData =
+        private static object[] _createTicketValidData =
         {
-            new [] {new List<string> {"Tickets"}},
-            new [] {new List<string> {"Testing", "tickets"}},
             new [] {new List<string> {"Testing", "titles", "for", "tickets"}},
         };
 
+        private static object[] _closeTicketDoesNotExist =
+        {
+            new object[] {1, _prepareTicketDict()}
+        };
+
+        private static object[] _closeTicketExists =
+        {
+            new object[] {3, _prepareTicketDict()}
+        };
+
+        private static object[] _assignTicketInvalidData =
+        {
+            new object[] {1, "username", _prepareTicketDict()},
+            new object[] {3, "", _prepareTicketDict()},
+            new object[] {3, null, _prepareTicketDict()},
+            new object[] {3, string.Empty, _prepareTicketDict()},
+            new object[] {3, " ",_prepareTicketDict()}
+        };
+        
+        private static object[] _assignTicketValidData =
+        {
+            new object[] {3, "username", _prepareTicketDict()}
+        };
+        
         #endregion
         
         
         private TicketProcessor _ticketProcessor;
         
         [SetUp]
-        public void Setup()
+        public void Initialize()
         {
             _ticketProcessor = new TicketProcessor();
         }
 
-        [TestCaseSource(nameof(CreateTicket_InvalidData))]
+        private void InitializeWithData(Dictionary<int, Ticket> tickets)
+        {
+            _ticketProcessor = new TicketProcessor(tickets);
+        }
+
+        [TestCaseSource(nameof(_createTicketInvalidData))]
         public void CreateTicket_NoTicketNameProvided_ReturnsZero(string ticketTitle)
         {
             int expectedId = 0;
@@ -42,10 +76,10 @@ namespace SupportCliTests
             Assert.AreEqual(expectedId, actualId);
         }
         
-        [TestCaseSource(nameof(CreateTicket_ValidData))]
+        [TestCaseSource(nameof(_createTicketValidData))]
         public void CreateTicket_TicketNameProvided_ReturnsTicketId(List<string> ticketTitles)
         {
-            int expectedIdCounter = 1;
+            var expectedIdCounter = 1;
             foreach (var title in ticketTitles)
             { 
                 int actualId = _ticketProcessor.CreateTicket(title);
@@ -53,6 +87,48 @@ namespace SupportCliTests
 
                 expectedIdCounter++;
             }
+        }
+
+        [TestCaseSource(nameof(_closeTicketDoesNotExist))]
+        public void CloseTicket_TicketDoesNotExist_ReturnFalse(int ticketToClose, Dictionary<int, Ticket> tickets)
+        {
+            InitializeWithData(tickets);
+            
+            var actualResult = _ticketProcessor.CloseTicket(ticketToClose);
+
+            Assert.IsFalse(actualResult);
+        }
+        
+        [TestCaseSource(nameof(_closeTicketExists))]
+        public void CloseTicket_TicketExists_ReturnTrue(int ticketToClose, Dictionary<int, Ticket> tickets)
+        {
+            InitializeWithData(tickets);
+            
+            var actualResult = _ticketProcessor.CloseTicket(ticketToClose);
+
+            Assert.IsTrue(actualResult);
+        }
+
+        [TestCaseSource(nameof(_assignTicketInvalidData))]
+        public void AssignTicket_TicketInvalidData_ReturnsFalse(int ticketId, string username,
+            Dictionary<int, Ticket> tickets)
+        {
+            InitializeWithData(tickets);
+            
+            var actualResult = _ticketProcessor.AssignTicket(ticketId, username);
+            
+            Assert.IsFalse(actualResult);
+        }
+
+        [TestCaseSource(nameof(_assignTicketValidData))]
+        public void AssignTicket_ValidDataProvided_ReturnTrue(int ticketId, string username,
+            Dictionary<int, Ticket> tickets)
+        {
+            InitializeWithData(tickets);
+            
+            var actualResult = _ticketProcessor.AssignTicket(ticketId, username);
+            
+            Assert.IsTrue(actualResult);
         }
     }
 }
