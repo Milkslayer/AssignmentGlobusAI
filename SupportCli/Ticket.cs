@@ -5,22 +5,26 @@ namespace SupportCli
 {
     public class Ticket
     {
-        public int Id { get; set; }
-        public string Title { get; set; }
-        public State CurrentState { get; set; }
-        public string AssignedToUser { get; set; }
-        public List<string> Comments { get; }
-
-        public Ticket()
-        {
-            Comments = new List<string>();
-        }
-
         public enum State
         {
             Open,
             InProgress,
             Closed
+        }
+        
+        public int Id { get; set; }
+        public string Title { get; set; }
+
+        public State CurrentState { get; set; }
+        public string AssignedToUser { get; set; }
+        public List<string> Comments { get; }
+        
+        public Ticket(int id, string title)
+        {
+            Comments = new List<string>();
+            Id = id;
+            Title = title;
+            CurrentState = State.Open;
         }
 
         public void Show()
