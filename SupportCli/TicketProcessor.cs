@@ -29,7 +29,16 @@ namespace SupportCli
             {"show", "show "},
             {"quit", "quit"},
         };
+        
+        public int GetTicketCount() => _counter;
 
+        public Ticket FindTicketById(int ticketId)
+        {
+            if (_tickets.ContainsKey(ticketId))
+                return _tickets[ticketId];
+            return null;
+        }
+        
         public void Start()
         {
             Console.WriteLine("SUPPORT CLI *");
@@ -59,10 +68,7 @@ namespace SupportCli
 
                 if (input.StartsWith(_commands["create"]))
                 {
-                    string ticketName = input.Substring(_commands["create"].Length,
-                        input.Length - _commands["create"].Length);
-                    int ticketId = CreateTicket(ticketName);
-                    Console.WriteLine(ticketId != 0 ? $"Ticket {ticketId} has been created" : "Invalid ticket name entered");
+                    RunCreateTicket(input);
                     continue;
                 }
 
@@ -77,97 +83,19 @@ namespace SupportCli
 
                 if (input.StartsWith(_commands["comment"]))
                 {
-                    if (int.TryParse(input.Split(' ')[1], out int id))
-                    {
-                        if (!_tickets.ContainsKey(id))
-                        {
-                            Console.WriteLine($"Ticket {id} not found");
-                            continue;
-                        }
-                        try
-                        {
-                            var commentPrefix = _commands["comment"].Length + input.Split(' ')[1].Length + 1;
-                            var comment = input.Substring(commentPrefix, input.Length - commentPrefix);
-
-                            if (string.IsNullOrWhiteSpace(comment))
-                            {
-                                Console.WriteLine("Comment cannot be empty");
-                                continue;
-                            }
-                        
-                            var ticket = _tickets[id];
-                            ticket.Comments.Add(comment);
-                    
-                            Console.WriteLine($"New comment has been added into {id}");
-                        }
-                        catch (ArgumentOutOfRangeException)
-                        {
-                            Console.WriteLine("Comment not provided");
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e);
-                            throw;
-                        }
-                    }
+                    RunAddComment(input);
                     continue;
                 }
 
                 if (input.StartsWith(_commands["assign"]))
                 {
-                    if (int.TryParse(input.Split(' ')[1], out int id))
-                    {
-                        try
-                        {
-                            var usernamePrefix = _commands["assign"].Length + input.Split(' ')[1].Length + 1;
-                            var username = input.Substring(usernamePrefix, input.Length - usernamePrefix);
-
-                            if (string.IsNullOrWhiteSpace(username))
-                            {
-                                Console.WriteLine("Username cannot be empty");
-                                continue;
-                            }
-
-                            Console.WriteLine(AssignTicket(id, username)
-                                ? $"Ticket {id} has been assigned to {username}"
-                                : "Ticket not found");
-                        }
-                        catch (ArgumentOutOfRangeException)
-                        {
-                            Console.WriteLine("Username not provided");
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e);
-                            throw;
-                        }
-                    }
-                    else
-                        Console.WriteLine("Invalid ticket Id entered");
+                    RunAssignTicket(input);
                     continue;
                 }
 
                 if (input.StartsWith(_commands["close"]))
                 {
-                    if (int.TryParse(input.Split(' ')[1], out int id))
-                    {
-                        var (isSuccess, ticketState) = CloseTicket(id);
-
-                        switch (isSuccess)
-                        {
-                            case false when ticketState == null:
-                                Console.WriteLine($"Ticket {id} not found");
-                                break;
-                            case false when ticketState == Ticket.State.Closed:
-                                Console.WriteLine($"Ticket {id} is already closed");
-                                break;
-                            default:
-                                Console.WriteLine($"Ticket {id} has been closed successfully");
-                                break;
-                        }
-                    }
-                    else
-                        Console.WriteLine("Invalid ticket Id entered");
+                    RunCloseTask(input);
                     continue;
                 }
 
@@ -175,6 +103,107 @@ namespace SupportCli
             }
         }
 
+        private void RunCloseTask(string rawInput)
+        {
+            if (int.TryParse(rawInput.Split(' ')[1], out int id))
+            {
+                var (isSuccess, ticketState) = CloseTicket(id);
+
+                switch (isSuccess)
+                {
+                    case false when ticketState == null:
+                        Console.WriteLine($"Ticket {id} not found");
+                        break;
+                    case false when ticketState == Ticket.State.Closed:
+                        Console.WriteLine($"Ticket {id} is already closed");
+                        break;
+                    default:
+                        Console.WriteLine($"Ticket {id} has been closed successfully");
+                        break;
+                }
+            }
+            else
+                Console.WriteLine("Invalid ticket Id entered");
+        }
+        
+        public void RunAssignTicket(string rawInput)
+        {
+            if (int.TryParse(rawInput.Split(' ')[1], out int id))
+            {
+                try
+                {
+                    var usernamePrefix = _commands["assign"].Length + 1 + rawInput.Split(' ')[1].Length + 1;
+                    var username = rawInput.Substring(usernamePrefix, rawInput.Length - usernamePrefix);
+
+                    if (string.IsNullOrWhiteSpace(username))
+                    {
+                        Console.WriteLine("Username cannot be empty");
+                        return;
+                    }
+
+                    Console.WriteLine(AssignTicket(id, username)
+                        ? $"Ticket {id} has been assigned to {username}"
+                        : "Ticket not found");
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    Console.WriteLine("Username not provided");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+            }
+            else
+                Console.WriteLine("Invalid ticket Id entered");
+        }
+
+        public void RunCreateTicket(string rawInput)
+        {
+            string ticketName = rawInput.Substring(_commands["create"].Length,
+                rawInput.Length - _commands["create"].Length);
+            int ticketId = CreateTicket(ticketName);
+            Console.WriteLine(ticketId != 0 ? $"Ticket {ticketId} has been created" : "Invalid ticket name entered");
+        }
+
+        public void RunAddComment(string input)
+        {
+            if (int.TryParse(input.Split(' ')[1], out int id))
+            {
+                if (!_tickets.ContainsKey(id))
+                {
+                    Console.WriteLine($"Ticket {id} not found");
+                    return;
+                }
+                try
+                {
+                    var commentPrefix = _commands["comment"].Length + input.Split(' ')[1].Length + 1;
+                    var comment = input.Substring(commentPrefix, input.Length - commentPrefix);
+
+                    if (string.IsNullOrWhiteSpace(comment))
+                    {
+                        Console.WriteLine("Comment cannot be empty");
+                        return;
+                    }
+                        
+                    var ticket = _tickets[id];
+                    ticket.Comments.Add(comment);
+                    
+                    Console.WriteLine($"New comment has been added into {id}");
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    Console.WriteLine("Comment not provided");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+            }
+        }
+        
         public bool AssignTicket(int id, string username)
         {
             if (!_tickets.ContainsKey(id) || string.IsNullOrWhiteSpace(username))

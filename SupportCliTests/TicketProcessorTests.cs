@@ -62,7 +62,99 @@ namespace SupportCliTests
         {
             new object[] {3, "username", _prepareTicketDict()}
         };
-        
+
+
+        private static object[] _runCreateTask =
+        {
+            new object[]
+            {
+                3, new []
+                {
+                    "create TicketName",
+                    "create 123",
+                    "create TicketName 123"
+                }
+            },
+            new object[]
+            {
+                0, new []
+                {
+                    "create",
+                    "create  ",
+                    "create                 132"
+                }
+            }
+        };
+
+        private static object[] _runAddComment =
+        {
+            new object[]
+            {
+                6, 3, new[]
+                {
+                    "comment 6 Comment",
+                    "comment 6 123",
+                    "comment 6 Comment 123",
+                    "comment 5 Comment 123"
+                },
+                _prepareTicketDict()
+            },
+            new object[]
+            {
+                6, 0, new[]
+                {
+                    "comment Comment",
+                    "comment 3123",
+                    "comment ",
+                    "comment 6     ",
+                    "comment 6",
+                    "comment 6 ",
+                },
+                _prepareTicketDict()
+            }
+        };
+
+        private static object[] _runAssignTicket =
+        {
+            new object[]
+            {
+                3, "GlobusAi", new[]
+                {
+                    "assign 3 GlobusAi",
+                },
+                _prepareTicketDict()
+            },
+            new object[]
+            {
+                3, "123", new[]
+                {
+                    "assign 3 123",
+                },
+                _prepareTicketDict()
+            },
+            new object[]
+            {
+                3, "GlobusAi 123", new[]
+                {
+                    "assign 3 GlobusAi 123",
+                    "assign 5 GlobusAi 123"
+                },
+                _prepareTicketDict()
+            },
+            new object[]
+            {
+                3, null, new[]
+                {
+                    "assign GlobusAi",
+                    "assign 12312",
+                    "assign ",
+                    "assign 3 ",
+                    "assign 3       ",
+                    "assign 3",
+                },
+                _prepareTicketDict()
+            }
+        };
         #endregion
         
         
@@ -74,9 +166,9 @@ namespace SupportCliTests
             _ticketProcessor = new TicketProcessor();
         }
 
-        private void InitializeWithData(Dictionary<int, Ticket> tickets)
+        private void InitializeWithData(Dictionary<int, Ticket> testData)
         {
-            _ticketProcessor = new TicketProcessor(tickets);
+            _ticketProcessor = new TicketProcessor(testData);
         }
 
         [TestCaseSource(nameof(_createTicketInvalidData))]
@@ -102,9 +194,9 @@ namespace SupportCliTests
         }
 
         [TestCaseSource(nameof(_closeTicketDoesNotExist))]
-        public void CloseTicket_TicketDoesNotExist_ReturnFalseNull(int ticketToClose, Dictionary<int, Ticket> tickets)
+        public void CloseTicket_TicketDoesNotExist_ReturnFalseNull(int ticketToClose, Dictionary<int, Ticket> testData)
         {
-            InitializeWithData(tickets);
+            InitializeWithData(testData);
             
             var (isSuccess, ticketState) = _ticketProcessor.CloseTicket(ticketToClose);
 
@@ -113,9 +205,9 @@ namespace SupportCliTests
         }
         
         [TestCaseSource(nameof(_closeTicketAlreadyClosed))]
-        public void CloseTicket_TicketAlreadyClosed_ReturnFalseClosed(int ticketToClose, Dictionary<int, Ticket> tickets)
+        public void CloseTicket_TicketAlreadyClosed_ReturnFalseClosed(int ticketToClose, Dictionary<int, Ticket> testData)
         {
-            InitializeWithData(tickets);
+            InitializeWithData(testData);
             
             var (isSuccess, ticketState) = _ticketProcessor.CloseTicket(ticketToClose);
 
@@ -124,9 +216,9 @@ namespace SupportCliTests
         }
         
         [TestCaseSource(nameof(_closeTicketExists))]
-        public void CloseTicket_TicketExists_ReturnTrueClosed(int ticketToClose, Dictionary<int, Ticket> tickets)
+        public void CloseTicket_TicketExists_ReturnTrueClosed(int ticketToClose, Dictionary<int, Ticket> testData)
         {
-            InitializeWithData(tickets);
+            InitializeWithData(testData);
             
             var (isSuccess, ticketState) = _ticketProcessor.CloseTicket(ticketToClose);
 
@@ -136,9 +228,9 @@ namespace SupportCliTests
 
         [TestCaseSource(nameof(_assignTicketInvalidData))]
         public void AssignTicket_TicketInvalidData_ReturnsFalse(int ticketId, string username,
-            Dictionary<int, Ticket> tickets)
+            Dictionary<int, Ticket> testData)
         {
-            InitializeWithData(tickets);
+            InitializeWithData(testData);
             
             var actualResult = _ticketProcessor.AssignTicket(ticketId, username);
             
@@ -147,13 +239,57 @@ namespace SupportCliTests
 
         [TestCaseSource(nameof(_assignTicketValidData))]
         public void AssignTicket_ValidDataProvided_ReturnTrue(int ticketId, string username,
-            Dictionary<int, Ticket> tickets)
+            Dictionary<int, Ticket> testData)
         {
-            InitializeWithData(tickets);
+            InitializeWithData(testData);
             
             var actualResult = _ticketProcessor.AssignTicket(ticketId, username);
             
             Assert.IsTrue(actualResult);
+        }
+
+        [TestCaseSource(nameof(_runCreateTask))]
+        public void RunCreateTask(int expectedTicketCount,
+            IEnumerable<string> commands)
+        {
+            foreach (var command in commands)
+            {
+                _ticketProcessor.RunCreateTicket(command);
+            }
+            Assert.AreEqual(expectedTicketCount, _ticketProcessor.GetTicketCount());
+        }
+        
+        [TestCaseSource(nameof(_runAddComment))]
+        public void RunAddComment(int ticketId,
+            int expectedCommentCount,
+            IEnumerable<string> commands,
+            Dictionary<int, Ticket> testData)
+        {
+            InitializeWithData(testData);
+
+            foreach (var command in commands)
+            {
+                _ticketProcessor.RunAddComment(command);
+            }
+
+            var ticket = _ticketProcessor.FindTicketById(ticketId);
+            Assert.AreEqual(expectedCommentCount, ticket.Comments.Count);
+        }
+        
+        [TestCaseSource(nameof(_runAssignTicket))]
+        public void RunAssignTicket(int ticketId,
+            string expectedAssignee,
+            IEnumerable<string> commands,
+            Dictionary<int, Ticket> testData)
+        {
+            InitializeWithData(testData);
+            foreach (var command in commands)
+            {
+                _ticketProcessor.RunAssignTicket(command);
+            }
+            var ticket = _ticketProcessor.FindTicketById(ticketId);
+
+            Assert.AreEqual(expectedAssignee, ticket.AssignedToUser);
         }
     }
 }
