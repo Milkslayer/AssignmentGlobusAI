@@ -32,12 +32,12 @@ namespace SupportCli
 
         public void Start()
         {
-            Console.WriteLine("\n\nSUPPORT CLI *");
+            Console.WriteLine("SUPPORT CLI *");
             Console.WriteLine("*************");
             
             while (true)
             {
-                Console.WriteLine("Type 'help' for available commands");    
+                Console.WriteLine("\n\nType 'help' for available commands");    
                 var input = Console.ReadLine();
 
                 if (string.IsNullOrWhiteSpace(input))
@@ -63,7 +63,7 @@ namespace SupportCli
                     string ticketName = input.Substring(_commands["create"].Length,
                         input.Length - _commands["create"].Length);
                     int ticketId = CreateTicket(ticketName);
-                    Console.WriteLine(ticketId != 0 ? $"{ticketId} has been created" : "Invalid ticket name entered");
+                    Console.WriteLine(ticketId != 0 ? $"Ticket {ticketId} has been created" : "Invalid ticket name entered");
                     continue;
                 }
 
@@ -116,9 +116,22 @@ namespace SupportCli
                 if (input.StartsWith(_commands["close"]))
                 {
                     if (int.TryParse(input.Split(' ')[1], out int id))
-                        Console.WriteLine(CloseTicket(id)
-                            ? $"Ticket {id} has been closed successfully"
-                            : "Ticket not found");
+                    {
+                        var (isSuccess, ticketState) = CloseTicket(id);
+
+                        switch (isSuccess)
+                        {
+                            case false when ticketState == null:
+                                Console.WriteLine($"Ticket {id} not found");
+                                break;
+                            case false when ticketState == Ticket.State.Closed:
+                                Console.WriteLine($"Ticker {id} is already closed");
+                                break;
+                            default:
+                                Console.WriteLine($"Ticket {id} has been closed successfully");
+                                break;
+                        }
+                    }
                     else
                         Console.WriteLine("Invalid ticket Id entered");
                 }
@@ -137,15 +150,19 @@ namespace SupportCli
             return true;
         }
         
-        public bool CloseTicket(int id)
+        public (bool, Ticket.State?) CloseTicket(int id)
         {
             if (!_tickets.ContainsKey(id))
-                return false;
+                return (false, null);
             
             var ticket = _tickets[id];
+
+            if (ticket.CurrentState == Ticket.State.Closed)
+                return (false, ticket.CurrentState);
+            
             ticket.CurrentState = Ticket.State.Closed;
             ticket.Comments.Add($"closed {DateTime.UtcNow}");
-            return true;
+            return (true, ticket.CurrentState);
         }
 
         public int CreateTicket(string ticketTitle)
