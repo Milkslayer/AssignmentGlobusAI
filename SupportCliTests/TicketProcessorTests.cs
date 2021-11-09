@@ -8,7 +8,7 @@ namespace SupportCliTests
     {
         #region TestData
 
-        private static Dictionary<int, Ticket> _prepareTicketDict() => new Dictionary<int, Ticket>
+        private static Dictionary<int, Ticket> _prepareTicketDict() => new()
         {
             {3, new Ticket(3, "Testing")},
             {6, new Ticket(6, "Close")},
@@ -30,6 +30,18 @@ namespace SupportCliTests
         private static object[] _closeTicketDoesNotExist =
         {
             new object[] {1, _prepareTicketDict()}
+        };
+
+        private static object[] _closeTicketAlreadyClosed =
+        {
+            new object[] {1, new Dictionary<int, Ticket>
+            {
+                {1, new Ticket(1, "Test")
+                    {
+                        CurrentState = Ticket.State.Closed
+                    }
+                }
+            }}
         };
 
         private static object[] _closeTicketExists =
@@ -90,23 +102,36 @@ namespace SupportCliTests
         }
 
         [TestCaseSource(nameof(_closeTicketDoesNotExist))]
-        public void CloseTicket_TicketDoesNotExist_ReturnFalse(int ticketToClose, Dictionary<int, Ticket> tickets)
+        public void CloseTicket_TicketDoesNotExist_ReturnFalseNull(int ticketToClose, Dictionary<int, Ticket> tickets)
         {
             InitializeWithData(tickets);
             
-            var actualResult = _ticketProcessor.CloseTicket(ticketToClose);
+            var (isSuccess, ticketState) = _ticketProcessor.CloseTicket(ticketToClose);
 
-            Assert.IsFalse(actualResult);
+            Assert.IsFalse(isSuccess);
+            Assert.IsNull(ticketState);
+        }
+        
+        [TestCaseSource(nameof(_closeTicketAlreadyClosed))]
+        public void CloseTicket_TicketAlreadyClosed_ReturnFalseClosed(int ticketToClose, Dictionary<int, Ticket> tickets)
+        {
+            InitializeWithData(tickets);
+            
+            var (isSuccess, ticketState) = _ticketProcessor.CloseTicket(ticketToClose);
+
+            Assert.IsFalse(isSuccess);
+            Assert.AreEqual(Ticket.State.Closed, ticketState);
         }
         
         [TestCaseSource(nameof(_closeTicketExists))]
-        public void CloseTicket_TicketExists_ReturnTrue(int ticketToClose, Dictionary<int, Ticket> tickets)
+        public void CloseTicket_TicketExists_ReturnTrueClosed(int ticketToClose, Dictionary<int, Ticket> tickets)
         {
             InitializeWithData(tickets);
             
-            var actualResult = _ticketProcessor.CloseTicket(ticketToClose);
+            var (isSuccess, ticketState) = _ticketProcessor.CloseTicket(ticketToClose);
 
-            Assert.IsTrue(actualResult);
+            Assert.IsTrue(isSuccess);
+            Assert.AreEqual(Ticket.State.Closed, ticketState);
         }
 
         [TestCaseSource(nameof(_assignTicketInvalidData))]
