@@ -203,7 +203,7 @@ namespace SupportCli
             Console.WriteLine("assign %ticket id% %user name% - assign the ticket");
             Console.WriteLine("close %ticket id% - close the ticket");
             Console.WriteLine("list- show all tickets");
-            Console.WriteLine("q - exit");
+            Console.WriteLine("quit- exit");
             Console.WriteLine();
         }
     }
