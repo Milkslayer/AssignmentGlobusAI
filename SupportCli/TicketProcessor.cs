@@ -20,7 +20,7 @@ namespace SupportCli
 
         private readonly Dictionary<string, string> _commands = new()
         {
-            {"assign", "assign "},
+            {"assign", "assign"},
             {"comment", "comment "},
             {"close", "close "},
             {"create", "create "},
@@ -34,10 +34,9 @@ namespace SupportCli
         {
             Console.WriteLine("SUPPORT CLI *");
             Console.WriteLine("*************");
-            
             while (true)
             {
-                Console.WriteLine("\n\nType 'help' for available commands");    
+                Console.Write("> ");
                 var input = Console.ReadLine();
 
                 if (string.IsNullOrWhiteSpace(input))
@@ -80,19 +79,36 @@ namespace SupportCli
                 {
                     if (int.TryParse(input.Split(' ')[1], out int id))
                     {
-                        var commentPrefix = _commands["comment"].Length + input.Split(' ')[1].Length + 1;
-                        var comment = input.Substring(commentPrefix, input.Length - commentPrefix);
-
-                        if (string.IsNullOrWhiteSpace(comment))
+                        if (!_tickets.ContainsKey(id))
                         {
-                            Console.WriteLine("Comment cannot be empty");
+                            Console.WriteLine($"Ticket {id} not found");
                             continue;
                         }
+                        try
+                        {
+                            var commentPrefix = _commands["comment"].Length + input.Split(' ')[1].Length + 1;
+                            var comment = input.Substring(commentPrefix, input.Length - commentPrefix);
+
+                            if (string.IsNullOrWhiteSpace(comment))
+                            {
+                                Console.WriteLine("Comment cannot be empty");
+                                continue;
+                            }
                         
-                        var ticket = _tickets[id];
-                        ticket.Comments.Add(comment);
+                            var ticket = _tickets[id];
+                            ticket.Comments.Add(comment);
                     
-                        Console.WriteLine($"New comment has been added into {id}");
+                            Console.WriteLine($"New comment has been added into {id}");
+                        }
+                        catch (ArgumentOutOfRangeException)
+                        {
+                            Console.WriteLine("Comment not provided");
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                            throw;
+                        }
                     }
                     continue;
                 }
@@ -101,18 +117,30 @@ namespace SupportCli
                 {
                     if (int.TryParse(input.Split(' ')[1], out int id))
                     {
-                        var usernamePrefix = _commands["assign"].Length + input.Split(' ')[1].Length + 1;
-                        var username = input.Substring(usernamePrefix, input.Length - usernamePrefix);
-
-                        if (string.IsNullOrWhiteSpace(username))
+                        try
                         {
-                            Console.WriteLine("Username cannot be empty");
-                            continue;
+                            var usernamePrefix = _commands["assign"].Length + input.Split(' ')[1].Length + 1;
+                            var username = input.Substring(usernamePrefix, input.Length - usernamePrefix);
+
+                            if (string.IsNullOrWhiteSpace(username))
+                            {
+                                Console.WriteLine("Username cannot be empty");
+                                continue;
+                            }
+
+                            Console.WriteLine(AssignTicket(id, username)
+                                ? $"Ticket {id} has been assigned to {username}"
+                                : "Ticket not found");
                         }
-                        
-                        Console.WriteLine(AssignTicket(id, username)
-                            ? $"Ticket {id} has been assigned to {username}"
-                            : "Ticket not found");
+                        catch (ArgumentOutOfRangeException)
+                        {
+                            Console.WriteLine("Username not provided");
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                            throw;
+                        }
                     }
                     else
                         Console.WriteLine("Invalid ticket Id entered");
@@ -131,7 +159,7 @@ namespace SupportCli
                                 Console.WriteLine($"Ticket {id} not found");
                                 break;
                             case false when ticketState == Ticket.State.Closed:
-                                Console.WriteLine($"Ticker {id} is already closed");
+                                Console.WriteLine($"Ticket {id} is already closed");
                                 break;
                             default:
                                 Console.WriteLine($"Ticket {id} has been closed successfully");
@@ -140,7 +168,10 @@ namespace SupportCli
                     }
                     else
                         Console.WriteLine("Invalid ticket Id entered");
+                    continue;
                 }
+
+                Console.WriteLine("\n\nType 'help' for available commands");
             }
         }
 
@@ -184,10 +215,13 @@ namespace SupportCli
         {
             if (_tickets.ContainsKey(id))
                 _tickets[id].Show();
+            else 
+                Console.WriteLine($"Ticket with {id} does not exist");
         }
 
         private void ListTickets()
         {
+            Console.WriteLine($"Id | Title");
             foreach (var ticket in _tickets)
             {
                 Console.WriteLine($"{ticket.Value.Id} | {ticket.Value.Title}");
@@ -196,7 +230,7 @@ namespace SupportCli
 
         private void PrintCommandList()
         {
-            Console.WriteLine("\nAvailable commands:");
+            Console.WriteLine();
             Console.WriteLine("create %title% - create a new ticket");
             Console.WriteLine("show %ticket id% - show the ticket");
             Console.WriteLine("comment %ticket id% %comment% - add a comment to the ticket");

@@ -14,7 +14,6 @@ namespace SupportCli
         
         public int Id { get; set; }
         public string Title { get; set; }
-
         public State CurrentState { get; set; }
         public string AssignedToUser { get; set; }
         public List<string> Comments { get; }
@@ -33,11 +32,11 @@ namespace SupportCli
             Console.WriteLine($"{nameof(Title)}={Title}");
             Console.WriteLine($"{nameof(CurrentState)}={CurrentState}");
             Console.WriteLine($"{nameof(AssignedToUser)}={AssignedToUser}");
-            Console.WriteLine($"Comments count={Comments.Count}");
+            Console.WriteLine($"CommentsCount={Comments.Count}");
             Console.WriteLine($"{nameof(Comments)}:");
             foreach (var comment in Comments)
             {
-                Console.WriteLine($"> {comment}");
+                Console.WriteLine($"# {comment}");
             }
         }
     }
